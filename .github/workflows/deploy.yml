@@ -52,8 +52,9 @@ on:
         type: string
         required: true
       caller_github_token:
+        description: The GitHub token of the caller
+        type: string
         required: true
-        description: The GitHub token
     secrets:
       aws_access_key_id:
         required: true
