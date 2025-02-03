@@ -81,6 +81,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup Go with Private Repos
+        uses: ./.github/workflows/action.yml
+        with:
+          go-version: ${{ inputs.go_version }}
+          keys: ${{ secrets.ssh_keys }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -131,12 +137,12 @@ jobs:
       #     git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
       #     go env -w GOPRIVATE="github.com/askrella/*"
       # Replace the above by using the action
-      - uses: actions/checkout@v4
-      - name: Setup Go with Private Repos
-        uses: ./.github/workflows/action.yml
-        with:
-          go-version: ${{ inputs.go_version }}
-          keys: ${{ secrets.ssh_keys }}
+      # - uses: actions/checkout@v4
+      # - name: Setup Go with Private Repos
+      #   uses: ./.github/workflows/action.yml
+      #   with:
+      #     go-version: ${{ inputs.go_version }}
+      #     keys: ${{ secrets.ssh_keys }}
 
       - name: (Terraform) Initialize
         run: terraform init -input=false -backend-config="key=${{ inputs.customer }}/${{ inputs.project }}/${{ inputs.stage }}" -backend-config="bucket=${{ inputs.state_bucket }}"
