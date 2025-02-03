@@ -1,0 +1,251 @@
+# Job used to deploy an existing or new stage
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: The stage to deploy
+        type: string
+        required: true
+      state_bucket:
+        description: The name of the bucket holding our state
+        type: string
+        required: true
+      cors_origins:
+        description: Comma separated list of origins for the environment
+        type: string
+        required: true
+      cdn_origins:
+        description: Regex matching allowed origins without scheme or path (e.g. ^(((cdn.(service.)?)?(askrella.de|askrella.dev)))$
+        type: string
+        required: true
+      service_host:
+        type: string
+        required: true
+      identity_url:
+        type: string
+        required: true
+      notify_url:
+        type: string
+        required: true
+      sentry_dsn:
+        type: string
+        required: true
+      service_name:
+        description: The name of the service
+        type: string
+        required: true
+      project:
+        description: The name of the project
+        type: string
+        required: true
+      customer:
+        description: The name of the customer
+        type: string
+        required: true
+      project_logo_url:
+        description: The URL of the project logo
+        type: string
+        required: true
+      go_version:
+        description: The version of Go to use
+        type: string
+        required: true
+    secrets:
+      aws_access_key_id:
+        required: true
+        description: The access key id for the stage
+      aws_secret_access_key:
+        required: true
+        description: The secret access key for the stage
+      ssh_keys:
+        required: true
+        description: The ssh keys used for dependency resolution
+      deployment_notification_webhook:
+        required: true
+        description: Google Chat webhook for deployment notification channel
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    # Limit concurrent executions to avoid parallel deployments breaking stuff
+    concurrency:
+      group: ${{ inputs.stage }}
+
+    permissions:
+      deployments: write
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.3"
+
+      - uses: chrnorm/deployment-action@releases/v1
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: ${{ github.token }}
+          description: ${{ inputs.stage }}
+          environment: ${{ inputs.stage }}
+          stage: ${{ inputs.stage }}
+          initial-status: pending
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: "5.x"
+          includePrerelease: true
+
+      - run: git fetch --unshallow
+
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v0.10.2
+
+      - name: Login to AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.aws_access_key_id }}
+          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+          aws-region: eu-central-1
+
+      # Replace the below by using the action
+      # - name: Set up Go
+      #   uses: actions/setup-go@v5
+      #   with:
+      #     go-version: ${{ inputs.go_version }}
+
+      # - name: Add SSH-Key
+      #   uses: webfactory/ssh-agent@v0.9.0
+      #   with:
+      #     ssh-private-key: ${{ secrets.ssh_keys }}
+
+      # - name: Configure Go Askrella Private Repos
+      #   run: |
+      #     git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
+      #     go env -w GOPRIVATE="github.com/askrella/*"
+      # Replace the above by using the action
+      - name: Setup Go with Private Repos
+        uses: .github/workflows/action.yml
+        with:
+          go-version: ${{ inputs.go_version }}
+          keys: ${{ secrets.ssh_keys }}
+
+      - name: (Terraform) Initialize
+        run: terraform init -input=false -backend-config="key=${{ inputs.customer }}/${{ inputs.project }}/${{ inputs.stage }}" -backend-config="bucket=${{ inputs.state_bucket }}"
+        working-directory: ./deploy
+
+      - name: (Terraform) Show
+        run: terraform show
+        working-directory: ./deploy
+
+      - name: (Terraform) Plan
+        env:
+          TF_VAR_stage: ${{ inputs.stage }}
+          TF_VAR_cors_origins: ${{ inputs.cors_origins }}
+          TF_VAR_cdn_origins: ${{ inputs.cdn_origins }}
+          TF_VAR_service_host: ${{ inputs.service_host }}
+          TF_VAR_sentry_dsn: ${{ inputs.sentry_dsn }}
+          TF_VAR_identity_url: ${{ inputs.identity_url }}
+          TF_VAR_notify_url: ${{ inputs.notify_url }}
+        run: terraform plan -input=false -out=plan
+        working-directory: ./deploy
+
+      - name: Update deployment status (in progress)
+        if: success()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          description: ${{ inputs.stage }}
+          environment: ${{ inputs.stage }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: "in_progress"
+
+      - name: (Terraform) Apply
+        env:
+          TF_VAR_stage: ${{ inputs.stage }}
+          TF_VAR_cors_origins: ${{ inputs.cors_origins }}
+          TF_VAR_cdn_origins: ${{ inputs.cdn_origins }}
+          TF_VAR_service_host: ${{ inputs.service_host }}
+          TF_VAR_sentry_dsn: ${{ inputs.sentry_dsn }}
+        run: terraform apply -auto-approve plan
+        working-directory: ./deploy
+
+      - name: (Terraform) Process output
+        id: tf-output
+        run: |
+          terraform output -raw url > terraform_url.txt
+          echo "::set-output name=url::$(cat terraform_url.txt)"
+          echo "URL: $(cat terraform_url.txt)"
+        working-directory: ./deploy
+
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          description: ${{ inputs.stage }}
+          environment: ${{ inputs.stage }}
+          environment-url: ${{ steps.tf-output.outputs.url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: "success"
+
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          description: ${{ inputs.stage }}
+          environment: ${{ inputs.stage }}
+          environment-url: ${{ steps.tf-output.outputs.url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: "error"
+
+      - name: Send Google Chat notification
+        if: success()
+        run: |
+          LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+          LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+          LAST_COMMIT_HASH=$(git log -1 --pretty=format:'%h')
+
+          curl --location "${{ secrets.deployment_notification_webhook }}" \
+            --header 'Content-Type: application/json' \
+              --data "{
+            \"cards\": [
+              {
+                \"header\": {
+                  \"title\": \"${{ inputs.service_name }} Deployment Notification\",
+                  \"subtitle\": \"${{ inputs.service_name }} -> ${{ inputs.stage }}\",
+                  \"imageUrl\": \"${{ inputs.project_logo_url }}\",
+                  \"imageStyle\": \"AVATAR\"
+                },
+                \"sections\": [
+                  {
+                    \"widgets\": [
+                      {
+                        \"textParagraph\": {
+                          \"text\": \"Commit Author: $LAST_COMMIT_AUTHOR\"
+                        }
+                      },
+                      {
+                        \"textParagraph\": {
+                          \"text\": \"Commit Message: $LAST_COMMIT_MESSAGE\"
+                        }
+                      },
+                      {
+                        \"textParagraph\": {
+                          \"text\": \"Commit Hash: $LAST_COMMIT_HASH\"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+            }"
