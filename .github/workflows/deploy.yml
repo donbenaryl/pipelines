@@ -131,12 +131,9 @@ jobs:
       #     git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
       #     go env -w GOPRIVATE="github.com/askrella/*"
       # Replace the above by using the action
+      - uses: actions/checkout@v4
       - name: Setup Go with Private Repos
-        - name: Checkout repository
-          uses: actions/checkout@v4
-
-        - name: Setup Go with Private Repos
-          uses: ./.github/workflows/action.yml
+        uses: ./.github/workflows/action.yml
         with:
           go-version: ${{ inputs.go_version }}
           keys: ${{ secrets.ssh_keys }}
