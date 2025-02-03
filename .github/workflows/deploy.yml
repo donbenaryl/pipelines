@@ -101,7 +101,7 @@ jobs:
         name: Create GitHub deployment
         id: deployment
         with:
-          token: ${{ inputs.github_token }}
+          token: ${{ github.token }}
           description: ${{ inputs.stage }}
           environment: ${{ inputs.stage }}
           stage: ${{ inputs.stage }}
@@ -172,7 +172,7 @@ jobs:
         if: success()
         uses: chrnorm/deployment-status@v2
         with:
-          token: ${{ inputs.github_token }}
+          token: ${{ github.token }}
           description: ${{ inputs.stage }}
           environment: ${{ inputs.stage }}
           deployment-id: ${{ steps.deployment.outputs.deployment_id }}
@@ -200,7 +200,7 @@ jobs:
         if: success()
         uses: chrnorm/deployment-status@v2
         with:
-          token: ${{ inputs.github_token }}
+          token: ${{ github.token }}
           description: ${{ inputs.stage }}
           environment: ${{ inputs.stage }}
           environment-url: ${{ steps.tf-output.outputs.url }}
@@ -211,7 +211,7 @@ jobs:
         if: failure()
         uses: chrnorm/deployment-status@v2
         with:
-          token: ${{ inputs.github_token }}
+          token: ${{ github.token }}
           description: ${{ inputs.stage }}
           environment: ${{ inputs.stage }}
           environment-url: ${{ steps.tf-output.outputs.url }}
