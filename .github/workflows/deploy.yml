@@ -83,7 +83,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Go with Private Repos
-        uses: ./.github/actions/deploy/action.yml
+        uses: donbenaryl/pipelines/.github/actions/deploy/action.yml@main
         with:
           go-version: ${{ inputs.go_version }}
           keys: ${{ secrets.ssh_keys }}
