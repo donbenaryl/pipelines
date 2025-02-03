@@ -26,5 +26,5 @@ runs:
     - name: Configure Go Askrella Private Repos
       shell: bash
       run: |
-        git config --global url."git@github.com:".insteadOf "https://github.com/" && \
+        git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
         go env -w GOPRIVATE="github.com/askrella/*"
