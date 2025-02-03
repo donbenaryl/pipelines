@@ -81,9 +81,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Go with Private Repos
-        uses: ./.github/workflows/action.yml
+        uses: ./.github/actions/deploy/action.yml
         with:
           go-version: ${{ inputs.go_version }}
           keys: ${{ secrets.ssh_keys }}
