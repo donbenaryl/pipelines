@@ -160,7 +160,6 @@ jobs:
         env:
           TF_VAR_stage: ${{ inputs.stage }}
           TF_VAR_cors_origins: ${{ inputs.cors_origins }}
-          TF_VAR_cdn_origins: ${{ inputs.cdn_origins || '' }}
           TF_VAR_service_host: ${{ inputs.service_host }}
           TF_VAR_sentry_dsn: ${{ inputs.sentry_dsn }}
           TF_VAR_identity_url: ${{ inputs.identity_url }}
@@ -182,7 +181,6 @@ jobs:
         env:
           TF_VAR_stage: ${{ inputs.stage }}
           TF_VAR_cors_origins: ${{ inputs.cors_origins }}
-          TF_VAR_cdn_origins: ${{ inputs.cdn_origins || '' }}
           TF_VAR_service_host: ${{ inputs.service_host }}
           TF_VAR_sentry_dsn: ${{ inputs.sentry_dsn }}
         run: terraform apply -auto-approve plan
