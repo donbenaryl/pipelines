@@ -51,10 +51,6 @@ on:
         description: The version of Go to use
         type: string
         required: true
-      caller_github_token:
-        description: The GitHub token of the caller
-        type: string
-        required: true
     secrets:
       aws_access_key_id:
         required: true
