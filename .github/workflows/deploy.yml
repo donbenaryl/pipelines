@@ -27,7 +27,7 @@ on:
         required: true
       notify_url:
         type: string
-        required: true
+        required: false
       sentry_dsn:
         type: string
         required: true
@@ -119,22 +119,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
           aws-region: eu-central-1
 
-      # Replace the below by using the action
-      # - name: Set up Go
-      #   uses: actions/setup-go@v5
-      #   with:
-      #     go-version: ${{ inputs.go_version }}
-
-      # - name: Add SSH-Key
-      #   uses: webfactory/ssh-agent@v0.9.0
-      #   with:
-      #     ssh-private-key: ${{ secrets.ssh_keys }}
-
-      # - name: Configure Go Askrella Private Repos
-      #   run: |
-      #     git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
-      #     go env -w GOPRIVATE="github.com/askrella/*"
-      # Replace the above by using the action
       - name: Setup Go with Private Repos
         uses: donbenaryl/pipelines/.github/actions/setup-go-private@main
         with:
