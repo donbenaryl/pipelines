@@ -1,0 +1,30 @@
+name: 'Setup Go with Private Repos'
+description: 'Sets up Go environment with private repository access'
+
+inputs:
+  go-version:
+    description: 'The Go version to use'
+    required: false
+    default: '1.22'
+  keys:
+    description: 'SSH keys used for go dependencies'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+
+    - name: Add SSH-Key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ inputs.keys }}
+
+    - name: Configure Go Askrella Private Repos
+      shell: bash
+      run: |
+        git config --global url."git@github.com:".insteadOf "https://github.com/" && \
+        go env -w GOPRIVATE="github.com/askrella/*"
