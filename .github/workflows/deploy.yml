@@ -132,7 +132,11 @@ jobs:
       #     go env -w GOPRIVATE="github.com/askrella/*"
       # Replace the above by using the action
       - name: Setup Go with Private Repos
-        uses: ./.github/workflows/action.yml
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Setup Go with Private Repos
+          uses: ./.github/workflows/action.yml
         with:
           go-version: ${{ inputs.go_version }}
           keys: ${{ secrets.ssh_keys }}
