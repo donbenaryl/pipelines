@@ -120,26 +120,26 @@ jobs:
           aws-region: eu-central-1
 
       # Replace the below by using the action
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ inputs.go_version }}
-
-      - name: Add SSH-Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.ssh_keys }}
-
-      - name: Configure Go Askrella Private Repos
-        run: |
-          git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
-          go env -w GOPRIVATE="github.com/askrella/*"
-      # Replace the above by using the action
-      # - name: Setup Go with Private Repos
-      #   uses: donbenaryl/pipelines/.github/actions/setup-go-private@main
+      # - name: Set up Go
+      #   uses: actions/setup-go@v5
       #   with:
       #     go-version: ${{ inputs.go_version }}
-      #     keys: ${{ secrets.ssh_keys }}
+
+      # - name: Add SSH-Key
+      #   uses: webfactory/ssh-agent@v0.9.0
+      #   with:
+      #     ssh-private-key: ${{ secrets.ssh_keys }}
+
+      # - name: Configure Go Askrella Private Repos
+      #   run: |
+      #     git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
+      #     go env -w GOPRIVATE="github.com/askrella/*"
+      # Replace the above by using the action
+      - name: Setup Go with Private Repos
+        uses: donbenaryl/pipelines/.github/actions/setup-go-private@main
+        with:
+          go-version: ${{ inputs.go_version }}
+          keys: ${{ secrets.ssh_keys }}
 
       - name: (Terraform) Initialize
         run: terraform init -input=false -backend-config="key=${{ inputs.customer }}/${{ inputs.project }}/${{ inputs.stage }}" -backend-config="bucket=${{ inputs.state_bucket }}"
@@ -153,6 +153,8 @@ jobs:
         env:
           TF_VAR_stage: ${{ inputs.stage }}
           TF_VAR_cors_origins: ${{ inputs.cors_origins }}
+          ${{ if inputs.cdn_origins }}:
+            TF_VAR_cdn_origins: ${{ inputs.cdn_origins }}
           TF_VAR_service_host: ${{ inputs.service_host }}
           TF_VAR_sentry_dsn: ${{ inputs.sentry_dsn }}
           TF_VAR_identity_url: ${{ inputs.identity_url }}
@@ -174,6 +176,8 @@ jobs:
         env:
           TF_VAR_stage: ${{ inputs.stage }}
           TF_VAR_cors_origins: ${{ inputs.cors_origins }}
+          ${{ if inputs.cdn_origins }}:
+            TF_VAR_cdn_origins: ${{ inputs.cdn_origins }}
           TF_VAR_service_host: ${{ inputs.service_host }}
           TF_VAR_sentry_dsn: ${{ inputs.sentry_dsn }}
         run: terraform apply -auto-approve plan
