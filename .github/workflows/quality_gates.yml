@@ -3,15 +3,15 @@ name: Quality Gates
 on:
   workflow_call:
     secrets:
-      askrella_libs_key:
+      libs_key:
         required: true
-        description: The SSH key for the Askrella Libs
-      askrella_telemetry_key:
+        description: The SSH key for the Libs
+      telemetry_key:
         required: true
-        description: The SSH key for the Askrella Telemetry
-      askrella_github_identity_ssh:
+        description: The SSH key for the Telemetry
+      github_identity_ssh:
         required: true
-        description: The SSH key for the Askrella Identity
+        description: The SSH key for the Identity
 
 env:
   GO_VERSION: 1.23.0
@@ -41,14 +41,14 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
-            ${{ secrets.askrella_libs_key }}
-            ${{ secrets.askrella_telemetry_key }}
-            ${{ secrets.askrella_github_identity_ssh }}
+            ${{ secrets.libs_key }}
+            ${{ secrets.telemetry_key }}
+            ${{ secrets.github_identity_ssh }}
 
-      - name: Configure Go Askrella Private Repos
+      - name: Configure Go Private Repos
         run: |
           git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
-          go env -w GOPRIVATE="github.com/askrella"
+          go env -w GOPRIVATE="github.com"
 
         # Due to the inability of GitHub workflow service containers to properly handle the "command"
         # option, we have to rely on the compose file to pass on the realm import option to the CLI
@@ -76,14 +76,14 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
-            ${{ secrets.askrella_libs_key }}
-            ${{ secrets.askrella_telemetry_key }}
-            ${{ secrets.askrella_github_identity_ssh }}
+            ${{ secrets.libs_key }}
+            ${{ secrets.telemetry_key }}
+            ${{ secrets.github_identity_ssh }}
 
-      - name: Configure Go Askrella Private Repos
+      - name: Configure Go Private Repos
         run: |
           git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
-          go env -w GOPRIVATE="github.com/askrella"
+          go env -w GOPRIVATE="github.com"
 
         # Due to the inability of GitHub workflow service containers to properly handle the "command"
         # option, we have to rely on the compose file to pass on the realm import option to the CLI
