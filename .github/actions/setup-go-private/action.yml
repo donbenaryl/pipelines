@@ -23,8 +23,8 @@ runs:
       with:
         ssh-private-key: ${{ inputs.keys }}
 
-    - name: Configure Go Askrella Private Repos
+    - name: Configure Go Private Repos
       shell: bash
       run: |
         git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" && \
-        go env -w GOPRIVATE="github.com/askrella/*"
+        go env -w GOPRIVATE="github.com/*"
